@@ -1,0 +1,22 @@
+{application, epush,
+ [{description, "An OTP application"},
+  {vsn, "0.1.0"},
+  {registered, []},
+  {mod, { epush_app, []}},
+  {applications,
+   [kernel,
+    stdlib,
+    lager,
+    amqp_client,
+    jiffy,
+    hackney,
+    turtle,
+    apns
+   ]},
+  {env,[]},
+  {modules, []},
+
+  {maintainers, []},
+  {licenses, []},
+  {links, []}
+ ]}.

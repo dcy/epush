@@ -1,0 +1,14 @@
+#!/bin/sh
+
+# Usage:
+#		test_certs {cert_file} {private_key_file}
+# Example:
+#		test_certs aps_developer_indetity.cer aps_developer_identity.p12
+
+rm -rf temp
+mkdir -p temp
+openssl pkcs12 -in HisirVoipPush.p12 -out temp/key-enc.pem -nodes
+openssl rsa -in temp/key-enc.pem -out temp/key.pem
+openssl x509 -inform der -in HisirCertificate.cer -out temp/cert.pem
+cat temp/cert.pem temp/key.pem > cert.pem
+rm -rf temp
