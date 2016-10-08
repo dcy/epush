@@ -4,6 +4,26 @@
         ]).
 -include("epush.hrl").
 
+%%return code
+-define(SUCCESS, 0).
+-define(ACCESS_TOKEN_EXPIRE, 6).
+
+-define(URL, <<"https://api.vmall.com/rest.php">>).
+-define(HEADERS, [{<<"Content-Type">>, <<"application/x-www-form-urlencoded; charset=utf-8">>}]).
+
+-define(SINGLE_ARGS, #{<<"deviceToken">> => "", <<"message">> => <<"message">>, <<"priority">> => 1,
+                       <<"nsp_svc">> => <<"openpush.message.single_send">>, 
+                       <<"nsp_ts">> => erlang:system_time(seconds),
+                       <<"cacheMode">> => 0, <<"msgType">> => rand:uniform(100)}).
+
+-define(NOTIFICATION_ARGS, #{<<"push_type">> => 1,
+                             <<"nsp_ts">> => erlang:system_time(seconds),
+                             <<"nsp_svc">> => <<"openpush.openapi.notification_send">>}).
+
+-define(BATCH_ARGS, #{<<"nsp_svc">> => <<"openpush.message.batch_send">>,
+                      <<"nsp_ts">> => erlang:system_time(seconds),
+                      <<"cacheMode">> => 0, <<"msgType">> => rand:uniform(100)}).
+
 get_access_token(AppId, AppSecret) ->
     Datas = [{grant_type, "client_credentials"}, {client_id, AppId},
              {client_secret, AppSecret}],
@@ -17,58 +37,118 @@ get_access_token(AppId, AppSecret) ->
     {ok, ResultBin} = hackney:body(ClientRef),
     jiffy:decode(ResultBin, [return_maps]).
 
+%handle_send(MQPayload, #{access_token:=AccessToken}) ->
+%    ?TRACE_VAR(single_send),
+%    #{<<"token">> := DeviceToken, <<"content">> := Content} = jiffy:decode(MQPayload, [return_maps]),
+%    Datas = [{deviceToken, DeviceToken}, {message, Content},
+%             {nsp_svc, "openpush.message.single_send"}, {nsp_ts, erlang:system_time(seconds)},
+%             {priority, 0}, {cacheMode, 1}, {msgType, 1},
+%             {access_token, AccessToken}
+%            ],
+%    Method = post,
+%    Headers = [{<<"Content-Type">>, <<"application/x-www-form-urlencoded; charset=utf-8">>}],
+%    URL = <<"https://api.vmall.com/rest.php">>,
+%    Payload = epush_util:urlencode(Datas),
+%    Options = [{pool, default}],
+%    {ok, _StatusCode, _RespHeaders, ClientRef} = hackney:request(Method, URL, Headers,
+%                                                                 Payload, Options),
+%    {ok, ResultBin} = hackney:body(ClientRef),
+%    Result = jiffy:decode(ResultBin, [return_maps]),
+%    case maps:get(<<"resultcode">>, Result) of
+%        0 ->
+%            ok;
+%        6 ->
+%            self() ! refresh_access_token_now,
+%            error;
+%        _ ->
+%            ?ERROR_MSG("epush huawei error, deviceToken: ~p, Result: ~p", [DeviceToken, Result]),
+%            error
+%    end.
 handle_send(MQPayload, #{access_token:=AccessToken}) ->
-    #{<<"token">> := DeviceToken, <<"content">> := Content} = jiffy:decode(MQPayload, [return_maps]),
-    Datas = [{deviceToken, DeviceToken}, {message, Content},
-             {nsp_svc, "openpush.message.single_send"}, {nsp_ts, erlang:system_time(seconds)},
-             {priority, 0}, {cacheMode, 1}, {msgType, 1},
-             {access_token, AccessToken}
-            ],
-    Method = post,
-    Headers = [{<<"Content-Type">>, <<"application/x-www-form-urlencoded; charset=utf-8">>}],
-    URL = <<"https://api.vmall.com/rest.php">>,
-    Payload = epush_util:urlencode(Datas),
-    Options = [{pool, default}],
-    {ok, _StatusCode, _RespHeaders, ClientRef} = hackney:request(Method, URL, Headers,
-                                                                 Payload, Options),
-    {ok, ResultBin} = hackney:body(ClientRef),
-    Result = jiffy:decode(ResultBin, [return_maps]),
-    case maps:get(<<"resultcode">>, Result) of
-        0 ->
+    PayloadMaps = jiffy:decode(MQPayload, [return_maps]),
+    case maps:get(<<"push_method">>, PayloadMaps, undefined) of
+        <<"single_send">> ->
+            NewPayload = maps:merge(?SINGLE_ARGS#{<<"access_token">> => AccessToken}, maps:remove(<<"push_method">>, PayloadMaps)),
+            do_send(NewPayload),
             ok;
-        6 ->
-            self() ! refresh_access_token_now,
-            error;
-        _ ->
-            ?ERROR_MSG("epush huawei error, deviceToken: ~p, Result: ~p", [DeviceToken, Result]),
-            error
+        %%todo: 要不要拆开tokens，全部人，tags三个接口处理
+        <<"notification_send">> ->
+            #{<<"title">> := Title, <<"content">> := Content} = PayloadMaps,
+            AndroidMsg = jiffy:encode(#{<<"notification_title">> => Title, <<"notification_content">> => Content, <<"doings">> => 1}),
+            NewPayload = maps:merge(?NOTIFICATION_ARGS#{<<"access_token">> => AccessToken, <<"android">> => AndroidMsg}, maps:without([<<"push_method">>, <<"title">>, <<"content">>], PayloadMaps)),
+            do_send(NewPayload),
+            ok;
+        <<"batch_send">> ->
+            DeviceTokenListOri = maps:get(<<"deviceTokenList">>, PayloadMaps, []),
+            DeviceTokenList = [binary_to_list(Item) || Item <- DeviceTokenListOri],
+            NewList = lists:flatten(io_lib:format("~p", [DeviceTokenList])),
+            NewPayloadMaps = PayloadMaps#{<<"deviceTokenList">> => NewList},
+            NewPayload = maps:merge(?BATCH_ARGS#{<<"access_token">> => AccessToken}, maps:remove(<<"push_method">>, NewPayloadMaps)),
+            do_send(NewPayload),
+            ok;
+        undefined ->
+            #{<<"token">> := DeviceToken, <<"content">> := Content} = PayloadMaps,
+            NewPayload = maps:merge(?SINGLE_ARGS#{<<"access_token">> => AccessToken, <<"deviceToken">> => DeviceToken, <<"message">> => Content}, maps:remove(<<"push_method">>, PayloadMaps)),
+            do_send(NewPayload)
     end.
 
-notification_send(MQPayload, #{access_token:=AccessToken}) ->
-    #{<<"token">> := DeviceToken, <<"content">> := Content} = jiffy:decode(MQPayload, [return_maps]),
-    AndroidMsg = jiffy:encode(#{notification_title=> <<"Hello">>, notification_content => <<"world">>, doings => 1}),
-    Datas = [{push_type, 1}, {tokens, DeviceToken}, {android, AndroidMsg}, {access_token, AccessToken},
-             {nsp_svc, "openpush.openapi.notification_send"}, {nsp_ts, erlang:system_time(seconds)}
-            ],
+do_send(PayloadMaps) ->
     Method = post,
-    Headers = [{<<"Content-Type">>, <<"application/x-www-form-urlencoded; charset=utf-8">>}],
-    URL = <<"https://api.vmall.com/rest.php">>,
-    Payload = epush_util:urlencode(Datas),
+    Payload = hackney_url:qs(maps:to_list(PayloadMaps)),
+    %Payload = epush_util:urlencode(maps:to_list(PayloadMaps)),
+    %Payload = jiffy:encode(PayloadMaps),
     Options = [{pool, default}],
-    {ok, _StatusCode, _RespHeaders, ClientRef} = hackney:request(Method, URL, Headers,
+    {ok, _StatusCode, _RespHeaders, ClientRef} = hackney:request(Method, ?URL, ?HEADERS,
                                                                  Payload, Options),
     {ok, ResultBin} = hackney:body(ClientRef),
-    Result = jiffy:decode(jiffy:decode(ResultBin, [return_maps]), [return_maps]),
-    case maps:get(<<"result_code">>, Result) of
-        0 ->
+    ResultOri = jiffy:decode(ResultBin, [return_maps]),
+    Result = case erlang:is_map(ResultOri) of
+                 true -> ResultOri;
+                 false -> jiffy:decode(ResultOri, [return_maps])
+             end,
+    Code = case maps:get(<<"resultcode">>, Result, undefined) of
+               undefined -> maps:get(<<"result_code">>, Result);
+               Other -> Other
+           end,
+    case Code of
+        ?SUCCESS ->
             ok;
-        6 ->
+        ?ACCESS_TOKEN_EXPIRE ->
             self() ! refresh_access_token_now,
             error;
         _ ->
-            ?ERROR_MSG("epush huawei error, deviceToken: ~p, Result: ~p", [DeviceToken, Result]),
-            error
+            ?ERROR_MSG("epush_huawei error, PayloadMaps: ~p, Result: ~p", [PayloadMaps, Result]),
+            ok
     end.
+
+
+
+%notification_send(MQPayload, #{access_token:=AccessToken}) ->
+%    ?TRACE_VAR(notification_send),
+%    #{<<"token">> := DeviceToken, <<"content">> := Content} = jiffy:decode(MQPayload, [return_maps]),
+%    AndroidMsg = jiffy:encode(#{notification_title=> <<"Hello">>, notification_content => <<"world">>, doings => 1}),
+%    Datas = [{push_type, 1}, {tokens, DeviceToken}, {android, AndroidMsg}, {access_token, AccessToken},
+%             {nsp_svc, "openpush.openapi.notification_send"}, {nsp_ts, erlang:system_time(seconds)}
+%            ],
+%    Method = post,
+%    Headers = [{<<"Content-Type">>, <<"application/x-www-form-urlencoded; charset=utf-8">>}],
+%    URL = <<"https://api.vmall.com/rest.php">>,
+%    Payload = epush_util:urlencode(Datas),
+%    Options = [{pool, default}],
+%    {ok, _StatusCode, _RespHeaders, ClientRef} = hackney:request(Method, URL, Headers,
+%                                                                 Payload, Options),
+%    {ok, ResultBin} = hackney:body(ClientRef),
+%    Result = jiffy:decode(jiffy:decode(ResultBin, [return_maps]), [return_maps]),
+%    case maps:get(<<"result_code">>, Result) of
+%        0 ->
+%            ok;
+%        6 ->
+%            self() ! refresh_access_token_now,
+%            error;
+%        _ ->
+%            ?ERROR_MSG("epush huawei error, deviceToken: ~p, Result: ~p", [DeviceToken, Result]),
+%            error
+%    end.
 
 loop(_RoutingKey, _ContentType, Payload, #{app_id:=AppId, app_secret:=AppSecret}=State) ->
     NewState = case maps:get(access_token, State, undefined) of

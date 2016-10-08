@@ -12,7 +12,7 @@
 handle_send(MQPayload, #{pkg_name:=PkgName, headers:=Headers}) ->
     PayloadMaps = jiffy:decode(MQPayload, [return_maps]),
     case maps:get(<<"push_method">>, PayloadMaps) of
-        "notification_send" ->
+        <<"notification_send">> ->
             URL = <<"https://api.xmpush.xiaomi.com/v3/message/regid">>,
             NewPayload = maps:merge(?PAYLOAD_MAPS#{<<"restricted_package_name">> => PkgName, <<"pass_through">> => 0}, maps:remove(<<"push_method">>, PayloadMaps)),
             do_send(URL, NewPayload, Headers);
