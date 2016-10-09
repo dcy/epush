@@ -83,6 +83,11 @@ start_worker(#{type:=fcm, app_secret:=AppSecret, proxy:=Proxy, pool_size:=PoolSi
     State = #{type=>fcm, app_secret=>AppSecret, headers=>Headers, proxy=>Proxy},
     {ok, _} = gen_subscriber(fcm, Queue, PoolSize, State),
     ok;
+start_worker(#{type:=flyme, app_id:=AppId, app_secret:=AppSecret, pool_size:=PoolSize,
+               queue:=Queue}) ->
+    State = #{type=>flyme, app_id=>AppId, app_secret=>AppSecret},
+    {ok, _} = gen_subscriber(flyme, Queue, PoolSize, State),
+    ok;
 start_worker(#{type:=sms, sms_type:=SmsType, apikey:=Apikey, pool_size:=PoolSize,
                queue:=Queue}) ->
     State = #{type=>sms, sms_type=>SmsType, apikey=>Apikey},

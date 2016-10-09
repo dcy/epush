@@ -37,55 +37,25 @@ get_access_token(AppId, AppSecret) ->
     {ok, ResultBin} = hackney:body(ClientRef),
     jiffy:decode(ResultBin, [return_maps]).
 
-%handle_send(MQPayload, #{access_token:=AccessToken}) ->
-%    ?TRACE_VAR(single_send),
-%    #{<<"token">> := DeviceToken, <<"content">> := Content} = jiffy:decode(MQPayload, [return_maps]),
-%    Datas = [{deviceToken, DeviceToken}, {message, Content},
-%             {nsp_svc, "openpush.message.single_send"}, {nsp_ts, erlang:system_time(seconds)},
-%             {priority, 0}, {cacheMode, 1}, {msgType, 1},
-%             {access_token, AccessToken}
-%            ],
-%    Method = post,
-%    Headers = [{<<"Content-Type">>, <<"application/x-www-form-urlencoded; charset=utf-8">>}],
-%    URL = <<"https://api.vmall.com/rest.php">>,
-%    Payload = epush_util:urlencode(Datas),
-%    Options = [{pool, default}],
-%    {ok, _StatusCode, _RespHeaders, ClientRef} = hackney:request(Method, URL, Headers,
-%                                                                 Payload, Options),
-%    {ok, ResultBin} = hackney:body(ClientRef),
-%    Result = jiffy:decode(ResultBin, [return_maps]),
-%    case maps:get(<<"resultcode">>, Result) of
-%        0 ->
-%            ok;
-%        6 ->
-%            self() ! refresh_access_token_now,
-%            error;
-%        _ ->
-%            ?ERROR_MSG("epush huawei error, deviceToken: ~p, Result: ~p", [DeviceToken, Result]),
-%            error
-%    end.
 handle_send(MQPayload, #{access_token:=AccessToken}) ->
     PayloadMaps = jiffy:decode(MQPayload, [return_maps]),
     case maps:get(<<"push_method">>, PayloadMaps, undefined) of
         <<"single_send">> ->
             NewPayload = maps:merge(?SINGLE_ARGS#{<<"access_token">> => AccessToken}, maps:remove(<<"push_method">>, PayloadMaps)),
-            do_send(NewPayload),
-            ok;
+            do_send(NewPayload);
         %%todo: 要不要拆开tokens，全部人，tags三个接口处理
         <<"notification_send">> ->
             #{<<"title">> := Title, <<"content">> := Content} = PayloadMaps,
             AndroidMsg = jiffy:encode(#{<<"notification_title">> => Title, <<"notification_content">> => Content, <<"doings">> => 1}),
             NewPayload = maps:merge(?NOTIFICATION_ARGS#{<<"access_token">> => AccessToken, <<"android">> => AndroidMsg}, maps:without([<<"push_method">>, <<"title">>, <<"content">>], PayloadMaps)),
-            do_send(NewPayload),
-            ok;
+            do_send(NewPayload);
         <<"batch_send">> ->
             DeviceTokenListOri = maps:get(<<"deviceTokenList">>, PayloadMaps, []),
             DeviceTokenList = [binary_to_list(Item) || Item <- DeviceTokenListOri],
             NewList = lists:flatten(io_lib:format("~p", [DeviceTokenList])),
             NewPayloadMaps = PayloadMaps#{<<"deviceTokenList">> => NewList},
             NewPayload = maps:merge(?BATCH_ARGS#{<<"access_token">> => AccessToken}, maps:remove(<<"push_method">>, NewPayloadMaps)),
-            do_send(NewPayload),
-            ok;
+            do_send(NewPayload);
         undefined ->
             #{<<"token">> := DeviceToken, <<"content">> := Content} = PayloadMaps,
             NewPayload = maps:merge(?SINGLE_ARGS#{<<"access_token">> => AccessToken, <<"deviceToken">> => DeviceToken, <<"message">> => Content}, maps:remove(<<"push_method">>, PayloadMaps)),
