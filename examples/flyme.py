@@ -17,8 +17,8 @@ class Flyme():
         self.channel = self.connection.channel()
 
     #通知栏
-    def varnished(self):
-        data = {'push_method':'varnished',
+    def notification(self):
+        data = {'push_method':'notification',
                 'title': "Hello!",
                 'content': "World",
                 'pushIds': 'UU34b4f75595d58540a78407f4d5a60630642497c5c5e'
@@ -52,7 +52,8 @@ if __name__ == "__main__":
     flyme = Flyme()
 
     #flyme.unvarnished()
-    flyme.varnished()
+    #flyme.varnished()
+    flyme.notification()
 
 
     flyme.end()

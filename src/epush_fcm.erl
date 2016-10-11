@@ -4,17 +4,54 @@
         ]).
 -include("epush.hrl").
 
+-define(URL, <<"https://fcm.googleapis.com/fcm/send">>).
+
+format_multi_topics(Topics) ->
+    Fun = fun(Topic) ->
+                  binary_to_list(<<"'", Topic/binary, "' in topics">>)
+          end,
+    TopicList = lists:map(Fun, Topics),
+    string:join(TopicList, " || ").
+
+
 handle_send(MQPayload, #{headers:=Headers, proxy:=Proxy}) ->
-    #{<<"token">> := Token, <<"content">> := Content} = jiffy:decode(MQPayload, [return_maps]),
-    Datas = #{to => Token, data => #{content => Content}},
+    PayloadMaps = jiffy:decode(MQPayload, [return_maps]),
+    case maps:get(<<"push_method">>, PayloadMaps, undefined) of
+        <<"notification">> ->
+            #{<<"title">> := Title, <<"content">> := Body, <<"to">> := To} = PayloadMaps,
+            Notification = #{<<"title">> => Title, <<"body">> => Body, <<"icon">> => <<"Hisir">>},
+            Msg = #{<<"to">> => To, <<"notification">> => Notification},
+            do_send(Msg, Headers, Proxy);
+        <<"unvarnished">> ->
+            #{<<"to">> := To, <<"content">> := Content} = PayloadMaps,
+            Data = #{<<"content">> => Content},
+            Msg = #{<<"to">> => To, <<"data">> => Data},
+            do_send(Msg, Headers, Proxy);
+        <<"topics">> ->
+            #{<<"topics">> := Topics, <<"content">> := Content} = PayloadMaps,
+            case Topics of
+                [Topic] ->%%单主题
+                    Msg = #{<<"to">> => Topic, <<"data">> => Content},
+                    do_send(Msg, Headers, Proxy);
+                _ -> %%多主题
+                    Condition = format_multi_topics(Topics),
+                    Msg = #{<<"condition">> => Condition, <<"data">> => Content},
+                    do_send(Msg, Headers, Proxy)
+            end;
+        undefined ->
+            #{<<"token">> := Token, <<"content">> := Content} = PayloadMaps,
+            Msg = #{to => Token, data => #{content => Content}},
+            do_send(Msg, Headers, Proxy)
+    end.
+
+do_send(PayloadMaps, Headers, Proxy) ->
     Method = post,
-    URL = <<"https://fcm.googleapis.com/fcm/send">>,
-    Payload = jiffy:encode(Datas),
+    Payload = jiffy:encode(PayloadMaps),
     Options = case Proxy of
-                  undefined ->[{pool, default}];
+                  undefined ->[{pool, fcm}];
                   _ -> [{pool, default}, {proxy, Proxy}]
               end,
-    {ok, StatusCode, _RespHeaders, ClientRef} = hackney:request(Method, URL, Headers,
+    {ok, StatusCode, _RespHeaders, ClientRef} = hackney:request(Method, ?URL, Headers,
                                                                 Payload, Options),
     case StatusCode of
         200 ->
@@ -24,12 +61,12 @@ handle_send(MQPayload, #{headers:=Headers, proxy:=Proxy}) ->
                 1 ->
                     ok;
                 0 ->
-                    ?ERROR_MSG("epush fcm error, Result: ~p, Token: ~p", [Result, Token]),
-                    error
+                    ?ERROR_MSG("epush fcm error, PayloadMaps:~p, Result: ~p", [PayloadMaps, Result]),
+                    ok 
             end;
         _ ->
-            ?ERROR_MSG("epush fcm error, StatusCode: ~p, Token: ~p", [StatusCode, Token]),
-            error
+            ?ERROR_MSG("epush fcm error, StatusCode: ~p, PayloadMaps: ~p", [StatusCode, PayloadMaps]),
+            ok
     end.
 
 loop(_RoutingKey, _ContentType, Payload, State) ->

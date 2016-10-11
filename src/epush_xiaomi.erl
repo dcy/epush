@@ -45,7 +45,6 @@ do_send(URL, PayloadMaps, Headers) ->
     #{<<"code">>:=Code} = Result,
     case Code of
         0 ->
-            ?INFO_MSG("epush_xiaomi success push: URL: ~p PayloadMaps: ~p", [URL, PayloadMaps]),
             ok;
         _ ->
             ?ERROR_MSG("epush xiaomi error, URL: ~p, PayloadMaps: ~p, Result: ~p", [URL, PayloadMaps, Result]),
