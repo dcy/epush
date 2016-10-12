@@ -1,11 +1,14 @@
 ##epush
-epush是一个推送服务，集成了苹果apns，小米xiaomi，华为huawei，魅族Flyme，谷歌FCM的服务端推送，同时也集成了云片yunpian的短信服务
+epush是一个推送服务，集成了苹果apns，小米xiaomi，华为huawei，魅族Flyme，谷歌FCM的服务端推送，同时也集成了云片yunpian的短信服务    
+> 会逐步拆成下面的组件：
+
 * 魅族Flyme: https://github.com/dcy/flyme_push
 * Google Fcm: https://github.com/dcy/fcm_push
 * 小米：https://github.com/dcy/xiaomi_push (todo)
 * 华为: https://github.com/dcy/huawei_push (todo)
 * 云片yunpian：https://github.com/dcy/eyunpian （todo)
-* 苹果apns: https://github.com/inaka/apns4erl
+* 苹果apns: https://github.com/inaka/apns4erl    
+
 
 
 ##使用方法
