@@ -67,8 +67,8 @@ if __name__ == "__main__":
     fcm = Fcm()
 
     #fcm.common()
-    #fcm.notification()
+    fcm.notification()
     #fcm.unvarnished()
-    fcm.topics()
+    #fcm.topics()
 
     fcm.end()

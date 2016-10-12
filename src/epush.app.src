@@ -12,7 +12,9 @@
     hackney,
     turtle,
     apns,
-    flyme_push
+    flyme_push,
+    fcm_push,
+    eutil
    ]},
   {env,[]},
   {modules, []},

@@ -78,8 +78,7 @@ start_worker(#{type:=huawei, app_id:=AppId, app_secret:=AppSecret, pool_size:=Po
     ok;
 start_worker(#{type:=fcm, app_secret:=AppSecret, proxy:=Proxy, pool_size:=PoolSize,
                queue:=Queue}) ->
-    Headers = [{<<"Content-Type">>, <<"application/json; charset=utf-8">>},
-               {<<"Authorization">>, list_to_binary(lists:concat(["key=", AppSecret]))}],
+    Headers = fcm_push:gen_headers(AppSecret),
     State = #{type=>fcm, app_secret=>AppSecret, headers=>Headers, proxy=>Proxy},
     {ok, _} = gen_subscriber(fcm, Queue, PoolSize, State),
     ok;
