@@ -19,7 +19,7 @@ handle_send(MQPayload, #{headers:=Headers, proxy:=Proxy}) ->
     case maps:get(<<"push_method">>, PayloadMaps, undefined) of
         <<"notification">> ->
             #{<<"title">> := Title, <<"content">> := Body, <<"to">> := To} = PayloadMaps,
-            Notification = #{<<"title">> => Title, <<"body">> => Body, <<"icon">> => <<"Hisir">>},
+            Notification = #{<<"title">> => Title, <<"body">> => Body},
             Msg = #{<<"to">> => To, <<"notification">> => Notification},
             do_send(Msg, Headers, Proxy);
         <<"unvarnished">> ->

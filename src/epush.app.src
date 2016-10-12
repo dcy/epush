@@ -11,7 +11,8 @@
     jiffy,
     hackney,
     turtle,
-    apns
+    apns,
+    flyme_push
    ]},
   {env,[]},
   {modules, []},

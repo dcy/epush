@@ -51,9 +51,8 @@ class Flyme():
 if __name__ == "__main__":
     flyme = Flyme()
 
-    #flyme.unvarnished()
-    #flyme.varnished()
-    flyme.notification()
+    flyme.unvarnished()
+    #flyme.notification()
 
 
     flyme.end()
