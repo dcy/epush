@@ -4,8 +4,8 @@ epush是一个推送服务，集成了苹果apns，小米xiaomi，华为huawei�
 
 * 魅族Flyme: https://github.com/dcy/flyme_push
 * Google Fcm: https://github.com/dcy/fcm_push
-* 小米：https://github.com/dcy/xiaomi_push (todo)
-* 华为: https://github.com/dcy/huawei_push (todo)
+* 小米：https://github.com/dcy/xiaomi_push    
+* 华为: https://github.com/dcy/huawei_push
 * 云片yunpian：https://github.com/dcy/eyunpian （todo)
 * 苹果apns: https://github.com/inaka/apns4erl    
 
