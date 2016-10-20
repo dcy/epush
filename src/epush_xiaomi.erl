@@ -15,40 +15,23 @@ handle_send(MQPayload, #{pkg_name:=PkgName, headers:=Headers}) ->
         <<"notification_send">> ->
             URL = <<"https://api.xmpush.xiaomi.com/v3/message/regid">>,
             NewPayload = maps:merge(?PAYLOAD_MAPS#{<<"restricted_package_name">> => PkgName, <<"pass_through">> => 0}, maps:remove(<<"push_method">>, PayloadMaps)),
-            do_send(URL, NewPayload, Headers);
+            xiaomi_push:send_for_headers(Headers, URL, NewPayload);
         <<"pass_through">> ->
             URL = <<"https://api.xmpush.xiaomi.com/v3/message/regid">>,
             NewPayload = maps:merge(?PAYLOAD_MAPS#{<<"restricted_package_name">> => PkgName, <<"pass_through">> => 1}, maps:remove(<<"push_method">>, PayloadMaps)),
-            do_send(URL, NewPayload, Headers);
+            xiaomi_push:send_for_headers(Headers, URL, NewPayload);
         <<"all">> ->
             URL = <<"https://api.xmpush.xiaomi.com/v3/message/all">>,
             NewPayload = maps:merge(?PAYLOAD_MAPS#{<<"restricted_package_name">> => PkgName}, maps:remove(<<"push_method">>, PayloadMaps)),
-            do_send(URL, NewPayload, Headers);
+            xiaomi_push:send_for_headers(Headers, URL, NewPayload);
         <<"topic">> ->
             URL = <<"https://api.xmpush.xiaomi.com/v3/message/topic">>,
             NewPayload = maps:merge(?PAYLOAD_MAPS#{<<"restricted_package_name">> => PkgName}, maps:remove(<<"push_method">>, PayloadMaps)),
-            do_send(URL, NewPayload, Headers);
+            xiaomi_push:send_for_headers(Headers, URL, NewPayload);
         <<"multi_topic">> ->
             URL = <<"https://api.xmpush.xiaomi.com/v3/message/multi_topic">>,
             NewPayload = maps:merge(?PAYLOAD_MAPS#{<<"restricted_package_name">> => PkgName}, maps:remove(<<"push_method">>, PayloadMaps)),
-            do_send(URL, NewPayload, Headers)
-    end.
-
-do_send(URL, PayloadMaps, Headers) ->
-    Method = post,
-    Payload = epush_util:urlencode(maps:to_list(PayloadMaps)),
-    Options = [{pool, default}],
-    {ok, _StatusCode, _RespHeaders, ClientRef} = hackney:request(Method, URL, Headers,
-                                                                 Payload, Options),
-    {ok, ResultBin} = hackney:body(ClientRef),
-    Result = jiffy:decode(ResultBin, [return_maps]),
-    #{<<"code">>:=Code} = Result,
-    case Code of
-        0 ->
-            ok;
-        _ ->
-            ?ERROR_MSG("epush xiaomi error, URL: ~p, PayloadMaps: ~p, Result: ~p", [URL, PayloadMaps, Result]),
-            error
+            xiaomi_push:send_for_headers(Headers, URL, NewPayload)
     end.
 
 

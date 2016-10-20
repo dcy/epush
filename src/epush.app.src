@@ -15,6 +15,7 @@
     flyme_push,
     fcm_push,
     huawei_push,
+    xiaomi_push,
     eutil
    ]},
   {env,[]},
