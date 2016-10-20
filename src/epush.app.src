@@ -16,6 +16,7 @@
     fcm_push,
     huawei_push,
     xiaomi_push,
+    eyunpian,
     eutil
    ]},
   {env,[]},
