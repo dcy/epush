@@ -1,11 +1,6 @@
 -module(epush_flyme).
--export([handle_send/2,
-         loop/4, handle_info/2
+-export([loop/4, handle_info/2
         ]).
--include("epush.hrl").
-
--define(HEADERS, [{<<"Content-Type">>, <<"application/x-www-form-urlencoded; charset=utf-8">>}]).
-
 
 handle_send(MQPayload, #{app_id:=AppId, app_secret:=AppSecret}) ->
     PayloadMaps = jiffy:decode(MQPayload, [return_maps]),

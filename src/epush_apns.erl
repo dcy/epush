@@ -6,8 +6,8 @@
          handle_apns_error/2, handle_apns_delete_subscription/1
         ]).
 
--include("epush.hrl").
 -include_lib("apns/include/apns.hrl").
+-include_lib("eutil/include/eutil.hrl").
 
 init() ->
     apns:connect(

@@ -16,8 +16,7 @@
 -define(SERVER, ?MODULE).
 
 -record(state, {count=0, start}).
-
--include("epush.hrl").
+-include_lib("eutil/include/eutil.hrl").
 
 %%%===================================================================
 %%% API

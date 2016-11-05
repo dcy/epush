@@ -35,14 +35,14 @@ class Fcm():
         self.in_mq(data)
 
     #透传
-    def unvarnished(self):
+    def data(self):
         msg_content = json.dumps({'body': 'body'})
         message = json.dumps({'message_type': 'Common', 'type': 0, 'from': 51, 'content': msg_content})
-        data = {'push_method': 'unvarnished',
+        msg = {'push_method': 'data',
                 'content': message,
                 'to': 'cGP8QEX4ZLU:APA91bGP-Z5tqCVDCJf_KW7jtY2gq9DxmCCObN2JylndcX7MhMwRkSYJr4Ev1zrliIUZP2sJUsTl98m6aAHmcua6J15QjI59daAQyQ0ir1J35ywpH_Be5S5E4XEGwHh8z_3H2B89KQWV'
                 }
-        self.in_mq(data)
+        self.in_mq(msg)
 
     #主题
     def topics(self):
@@ -68,7 +68,7 @@ if __name__ == "__main__":
 
     #fcm.common()
     fcm.notification()
-    #fcm.unvarnished()
+    #fcm.data()
     #fcm.topics()
 
     fcm.end()

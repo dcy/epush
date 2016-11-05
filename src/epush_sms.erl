@@ -1,8 +1,6 @@
 -module(epush_sms).
--export([handle_send/2,
-         loop/4, handle_info/2
+-export([loop/4, handle_info/2
         ]).
--include("epush.hrl").
 -include_lib("amqp_client/include/amqp_client.hrl").
 
 handle_send(MQPayload, #{sms_type:=yunpian} = State) ->
@@ -10,6 +8,8 @@ handle_send(MQPayload, #{sms_type:=yunpian} = State) ->
 
 handle_send(yunpian, MQPayload, #{apikey:=Apikey}) ->
     #{<<"type">> := Type, <<"mobile">> := Mobile, <<"content">> := Content} = jiffy:decode(MQPayload, [return_maps]),
+    lager:error("yunpian Content: ~p", [Content]),
+    lager:error("yunpian Content: ~ts", [unicode:characters_to_list(Content)]),
     yunpian_send(Type, Apikey, Mobile, Content).
 
 yunpian_send(<<"single">>, Apikey, Mobile, Content) ->

@@ -1,8 +1,6 @@
 -module(epush_huawei).
--export([handle_send/2,
-         loop/4, handle_info/2
+-export([loop/4, handle_info/2
         ]).
--include("epush.hrl").
 -include_lib("huawei_push/include/huawei_push.hrl").
 
 

@@ -1,10 +1,9 @@
 -module(epush_fcm).
--export([handle_send/2,
+-export([handle_http/2,
          loop/4, handle_info/2
         ]).
--include("epush.hrl").
 
--define(URL, <<"https://fcm.googleapis.com/fcm/send">>).
+-include_lib("eutil/include/eutil.hrl").
 
 %%todo: fcm_push:format_multi_topics
 format_multi_topics(Topics) ->
@@ -15,35 +14,43 @@ format_multi_topics(Topics) ->
     string:join(TopicList, " || ").
 
 
-handle_send(MQPayload, #{headers:=Headers, proxy:=Proxy}) ->
-    PayloadMaps = jiffy:decode(MQPayload, [return_maps]),
-    Msg = case maps:get(<<"push_method">>, PayloadMaps, undefined) of
-              <<"notification">> ->
-                  #{<<"title">> := Title, <<"content">> := Body, <<"to">> := To} = PayloadMaps,
-                  Notification = #{<<"title">> => Title, <<"body">> => Body},
-                  #{<<"to">> => To, <<"notification">> => Notification};
-              <<"unvarnished">> ->
-                  #{<<"to">> := To, <<"content">> := Content} = PayloadMaps,
-                  Data = #{<<"content">> => Content},
-                  #{<<"to">> => To, <<"data">> => Data};
-              <<"topics">> ->
-                  #{<<"topics">> := Topics, <<"content">> := Content} = PayloadMaps,
-                  case Topics of
-                      [Topic] ->%%单主题
-                          #{<<"to">> => Topic, <<"data">> => Content};
-                      _ -> %%多主题
-                          Condition = format_multi_topics(Topics),
-                          #{<<"condition">> => Condition, <<"data">> => Content}
-                  end;
-              undefined ->
-                  #{<<"token">> := Token, <<"content">> := Content} = PayloadMaps,
-                  #{to => Token, data => #{content => Content}}
+handle_push(ApiKey, Proxy, #{<<"push_method">> := <<"notification">>, <<"title">> := Title,
+                             <<"content">> := Body, <<"to">> := To}) ->
+    Notification = #{<<"title">> => Title, <<"body">> => Body, <<"sound">> => <<"default">>},
+    Msg = #{<<"to">> => To, <<"notification">> => Notification},
+    fcm_push:send(ApiKey, Proxy, Msg);
+
+handle_push(ApiKey, Proxy, #{<<"push_method">> := <<"data">>, <<"to">> := To,
+                             <<"content">> := Content}) ->
+    Data = #{<<"content">> => Content},
+    Msg = #{<<"to">> => To, <<"data">> => Data},
+    fcm_push:send(ApiKey, Proxy, Msg);
+
+handle_push(ApiKey, Proxy, #{<<"push_method">> := <<"topics">>, <<"topics">> := Topics,
+                             <<"content">> := Content}) ->
+    Msg = case Topics of
+              [Topic] ->%%单主题
+                  #{<<"to">> => Topic, <<"data">> => Content};
+              _ -> %%多主题
+                  Condition = format_multi_topics(Topics),
+                  #{<<"condition">> => Condition, <<"data">> => Content}
           end,
-    fcm_push:send(Msg, Headers, Proxy).
+    fcm_push:send(ApiKey, Proxy, Msg);
+
+handle_push(ApiKey, Proxy, #{<<"token">> := Token, <<"content">> := Content}) -> 
+    Msg = #{to => Token, data => #{content => Content}},
+    fcm_push:send(ApiKey, Proxy, Msg).
+
 
 loop(_RoutingKey, _ContentType, Payload, State) ->
-    handle_send(Payload, State),
+    handle_mq(State, Payload),
     {ack, State}.
 
 handle_info(_Info, State) ->
     {ok, State}.
+
+handle_mq(#{api_key := ApiKey, proxy := Proxy}, Payload) ->
+    handle_push(ApiKey, Proxy, jiffy:decode(Payload, [return_maps])).
+
+handle_http(#{api_key := ApiKey, proxy := Proxy}, Payload) ->
+    handle_push(ApiKey, Proxy, Payload).

@@ -17,6 +17,7 @@
     huawei_push,
     xiaomi_push,
     eyunpian,
+    cowboy,
     eutil
    ]},
   {env,[]},
