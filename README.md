@@ -43,37 +43,85 @@ epush是一个推送服务
 
 {epush, [
     {push_confs, [
-        #{type => apns, cert_file => "priv/cert1.pem", is_sandbox_env => false,
-            pool_size => 6, queue => <<"apns1">>},
-        #{type => apns, cert_file => "priv/cert2.pem", is_sandbox_env => false,
-            pool_size => 6, queue => <<"apns2">>},
+        #{type => apns, pool_size => 6, queue => <<"apns_c">>, cert_file => "priv/cert1.pem", is_sandbox_env => false},
+        #{type => apns, pool_size => 6, queue => <<"apns_t">>, cert_file => "priv/cert2.pem", is_sandbox_env => false},
         #{type => xiaomi, pkg_name => "xiaomi_pkg_name", app_secret => "xiaomi_app_secret",
-            pool_size => 6, queue => <<"xiaomi1">>},
+            pool_size => 6, queue => <<"xiaomi_c">>},
         #{type => huawei, app_id => 123456, app_secret => "huawei_app_secret",
-            pool_size => 6, queue => <<"huawei1">>},
+            pool_size => 6, queue => <<"huawei_c">>},
         %#{type => fcm, app_secret => "fcm_app_secret", proxy => undefined,
-        %   pool_size => 6, queue => <<"fcm1">>}
+        %   pool_size => 6, queue => <<"fcm_t">>}
         #{type => fcm, app_secret => "fcm_app_secret", proxy => "127.0.0.1:1081",
-            pool_size => 6, queue => <<"fcm2">>},
+            pool_size => 6, queue => <<"fcm_c">>},
         #{type => flyme, app_id => 12345, app_secret => "flyme_app_secret",
-            pool_size => 6, queue => <<"flyme1">>},
+            pool_size => 6, queue => <<"flyme_c">>},
         #{type => flyme, app_id => 12345, app_secret => "flyme_app_secret",
-            pool_size => 6, queue => <<"flyme2">>},
+            pool_size => 6, queue => <<"flyme_t">>},
         #{type => sms, sms_type => yunpian, apikey => "yunpian_apikey",
             pool_size => 6, queue => <<"yunpian">>}
     ]}
 ]},
 ```
 
-###消息队列Rabbitmq
-####苹果APNS
-####谷歌FCM
-####小米
-####华为
-####魅族Flyme
-####云片yunpian
+###苹果APNS
+###谷歌FCM
+####Http方式:
+* 详细example: [/examples/http/fcm.sh](/examples/http/fcm.sh)
+* 示例:
+```bash
+#通用透传接口
+#http http://localhost:8002/push epush_id=fcm_c token=$TOKEN content="common" -f
 
-###Http请求方式
+#通知栏
+#http http://localhost:8002/push  epush_id=fcm_c push_method=notification title=title content=content  to=$TOKEN
+
+#透传
+http http://localhost:8002/push  epush_id=fcm_c push_method=data content=content  to=$TOKEN
+```
+####Rabbitmq:
+* 详细example: [/examples/rabbitmq/fcm.py](/examples/rabbitmq/fcm.py)
+```Python
+#通用
+def common(self):
+    msg_content = json.dumps({'body': 'body'})
+    message = json.dumps({'message_type': 'Common', 'type': 0, 'from': 51, 'content': msg_content})
+    data = {'content': message,
+            'token': self.token
+            }
+    self.in_mq(data)
+
+#通知栏
+def notification(self):
+    data = {'push_method': 'notification',
+            'title': 'Title',
+            'content': 'Content',
+            'to': self.token 
+            }
+    self.in_mq(data)
+
+#透传
+def data(self):
+    msg_content = json.dumps({'body': 'body'})
+    message = json.dumps({'message_type': 'Common', 'type': 0, 'from': 51, 'content': msg_content})
+    msg = {'push_method': 'data',
+            'content': message,
+            'to': self.token
+            }
+    self.in_mq(msg)
+
+#主题
+def topics(self):
+    data = {'push_method': 'topics',
+    'topics': ["/topics/foo-bar"],
+            'content': "content"
+            }
+    self.in_mq(data)
+```
+###小米
+###华为
+###魅族Flyme
+###云片yunpian
+
 
 
 ##运行

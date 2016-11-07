@@ -15,13 +15,14 @@ class Flyme():
         credentials = pika.PlainCredentials(USERNAME, PASSWORD)
         self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=HOST, credentials=credentials))
         self.channel = self.connection.channel()
+        self.push_ids = 'UU34b4f75595d58540a78407f4d5a60630642497c5c5e'
 
     #通知栏
     def notification(self):
         data = {'push_method':'notification',
                 'title': "Hello!",
                 'content': "World",
-                'pushIds': 'UU34b4f75595d58540a78407f4d5a60630642497c5c5e'
+                'pushIds': self.push_ids
                 }
         self.in_mq(data)
 
@@ -51,8 +52,8 @@ class Flyme():
 if __name__ == "__main__":
     flyme = Flyme()
 
-    flyme.unvarnished()
-    #flyme.notification()
+    #flyme.unvarnished()
+    flyme.notification()
 
 
     flyme.end()
