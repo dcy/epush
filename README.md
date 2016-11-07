@@ -66,7 +66,7 @@ epush是一个推送服务
 
 ###苹果APNS
 ###谷歌FCM
-####Http方式: [/examples/http/fcm.sh](/examples/http/fcm.sh)
+* ####Http方式: [/examples/http/fcm.sh](/examples/http/fcm.sh)
 ```bash
 #通用透传接口
 #http http://localhost:8002/push epush_id=fcm_c token=$TOKEN content="common" -f
@@ -77,7 +77,7 @@ epush是一个推送服务
 #透传
 http http://localhost:8002/push  epush_id=fcm_c push_method=data content=content  to=$TOKEN
 ```
-####Rabbitmq: [/examples/rabbitmq/fcm.py](/examples/rabbitmq/fcm.py)
+* ####Rabbitmq: [/examples/rabbitmq/fcm.py](/examples/rabbitmq/fcm.py)
 ```Python
 #通用
 def common(self):
