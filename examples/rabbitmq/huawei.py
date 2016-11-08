@@ -64,8 +64,8 @@ class Huawei():
 if __name__ == "__main__":
     huawei = Huawei()
 
-    huawei.notification()
-    #huawei.single()
+    #huawei.notification()
+    huawei.single()
     #huawei.batch()
 
     huawei.end()

@@ -66,7 +66,7 @@ epush是一个推送服务
 
 ###苹果APNS
 ###谷歌FCM
-* Http方式: [/examples/http/fcm.sh](/examples/http/fcm.sh)
+* Http: [/examples/http/fcm.sh](/examples/http/fcm.sh)
 ```bash
 #通用透传接口
 #http http://localhost:8002/push epush_id=fcm_c token=$TOKEN content="common" -f
@@ -116,8 +116,117 @@ def topics(self):
     self.in_mq(data)
 ```
 ###小米
+* http: [/examples/http/xiaomi.sh](/examples/http/xiaomi.sh)
+```bash
+#通用透传接口
+#http http://localhost:8002/push epush_id=xiaomi_c token="go6VssZlTDDypm+hxYdaxycXtqM7M9NsTPbCjzyIyh0=" content="common" -f
+
+#推送全部
+#http http://localhost:8002/push epush_id=xiaomi_c push_method=all title="all中文" description="中文"
+
+#推送单人通知 
+http http://localhost:8002/push epush_id=xiaomi_c push_method=notification_send title="notification_send中文" description="中文" registration_id="go6VssZlTDDypm+hxYdaxycXtqM7M9NsTPbCjzyIyh0=" -f
+
+#推送单人透传 
+#http http://localhost:8002/push epush_id=xiaomi_c push_method=pass_through description="中文" registration_id="go6VssZlTDDypm+hxYdaxycXtqM7M9NsTPbCjzyIyh0=" -f
+```
+
+* Rabbitmq: [/examples/rabbitmq/xiaomi.py](/examples/rabbitmq/xiaomi.py)
+```Python
+def notification_send(self):
+    data = {'push_method': 'notification_send',
+            'title': 'Test  中文',
+            'description': 'Content',
+            'registration_id': 'go6VssZlTDDypm+hxYdaxycXtqM7M9NsTPbCjzyIyh0='}
+    self.in_mq(data)
+
+def all(self):
+    data = {'push_method':'all',
+            'title':'Test中文',
+            'description':'Test'}
+    self.in_mq(data)
+```
+
 ###华为
+* http: [/examples/http/huawei.sh](/examples/http/huawei.sh)
+```bash
+#通用透传接口
+#http http://localhost:8002/push epush_id=huawei_c token=$TOKEN content="common" -f
+
+#通知栏
+http http://localhost:8002/push epush_id=huawei_c push_method=notification_send title=title content=content  tokens=$TOKEN
+
+#透传
+#http http://localhost:8002/push  epush_id=huawei_c push_method=single_send message=message  deviceToken=$TOKEN
+```
+* Rabbitmq: [/examples/rabbitmq/huawei.py](/examples/rabbitmq/huawei.py)
+```Python
+#通知栏
+def notification(self):
+    data = {'push_method':'notification_send',
+            'push_type': 1,
+            'tokens': '08670650250202362000003019000001',
+            'title': "Hello!",
+            'content': "World"
+            }
+    self.in_mq(data)
+
+#透传
+def single(self):
+    msg_content = json.dumps({'body': 'body'})
+    message = json.dumps({'message_type': 'Common', 'type': 0, 'from': 51, 'content': msg_content})
+    data = {'push_method': 'single_send',
+            'message': message,
+            'deviceToken': '08670650250202362000003019000001'
+            }
+    self.in_mq(data)
+
+#群发
+def batch(self):
+    msg_content = json.dumps({'body': 'body'})
+    message = json.dumps({'message_type': 'Common', 'type': 0, 'from': 51, 'content': msg_content})
+    #message = json.dumps({'test': 'test'})
+    data = {'push_method': 'batch_send',
+            'message': message,
+            'deviceTokenList': ['08670650250202362000003019000001', 'sdfsdf']
+            }
+    self.in_mq(data)
+```
 ###魅族Flyme
+* http: [/examples/http/flyme.sh](/examples/http/flyme.sh)
+```bash
+#通用透传接口
+#http http://localhost:8002/push epush_id=flyme_c token=$TOKEN content="common" -f
+
+#通知栏
+#http http://localhost:8002/push  epush_id=flyme_c push_method=varnished title=title content=content  pushIds=$TOKEN
+#http http://localhost:8002/push  epush_id=flyme_c push_method=notification title=title content=content  pushIds=$TOKEN
+
+#透传
+http http://localhost:8002/push  epush_id=flyme_c push_method=unvarnished title=title content=content  pushIds=$TOKEN
+```
+
+* Rabbitmq: [/examples/rabbitmq/flyme.py](/examples/rabbitmq/flyme.py)
+```Python
+#通知栏
+def notification(self):
+    data = {'push_method':'notification',
+            'title': "Hello!",
+            'content': "World",
+            'pushIds': self.push_ids
+            }
+    self.in_mq(data)
+
+#透传
+def unvarnished(self):
+    msg_content = json.dumps({'body': 'body'})
+    message = json.dumps({'message_type': 'Common', 'type': 0, 'from': 51, 'content': msg_content})
+    data = {'push_method': 'unvarnished',
+            'content': message,
+            'pushIds': 'UU34b4f75595d58540a78407f4d5a60630642497c5c5e'
+            }
+    self.in_mq(data)
+```
 ###云片yunpian
 
 
