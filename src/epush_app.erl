@@ -100,10 +100,9 @@ start_worker(#{id:=Id, type:=flyme, app_id:=AppId, app_secret:=AppSecret,
     State = #{type=>flyme, app_id=>AppId, app_secret=>AppSecret},
     {ok, _} = gen_subscriber(flyme, eutil:to_binary(Id), PoolSize, State),
     put_push_conf(Id, Conf);
-start_worker(#{id:=Id, type:=sms, sms_type:=SmsType, apikey:=Apikey,
-               pool_size:=PoolSize}=Conf) ->
-    State = #{type=>sms, sms_type=>SmsType, apikey=>Apikey},
-    {ok, _} = gen_subscriber(sms, eutil:to_binary(Id), PoolSize, State),
+start_worker(#{id:=Id, type:=yunpian, apikey:=Apikey, pool_size:=PoolSize}=Conf) ->
+    State = #{type=>yunpian, apikey=>Apikey},
+    {ok, _} = gen_subscriber(yunpian, eutil:to_binary(Id), PoolSize, State),
     put_push_conf(Id, Conf),
     ok.
 

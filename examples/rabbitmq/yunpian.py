@@ -17,14 +17,14 @@ class Yunpian():
 
     def single_send(self):
         data = {'type': 'single',
-                'mobile': '+8615102025006',
-		'content':'【广州灵光科技】验证码8888，请您尽快验证，完成Hisir注册。如非本人操作请忽略。'}
+                'mobile': '+861510202',
+		'content':'【广州科技】验证码8888，请您尽快验证，完成sir注册。如非本人操作请忽略。'}
         self.in_mq(data)
 
     def batch_send(self):
         data = {'type': 'batch',
-                'mobile': '15102025006',
-		'content':'【广州灵光科技】验证码6666，请您尽快验证，完成Hisir注册。如非本人操作请忽略。'}
+                'mobile': '1510202',
+		'content':'【广州科技】验证码6666，请您尽快验证，完成sir注册。如非本人操作请忽略。'}
         self.in_mq(data)
 
 

@@ -228,6 +228,28 @@ def unvarnished(self):
     self.in_mq(data)
 ```
 ###云片yunpian
+* http: [/examples/http/yunpian.sh](/examples/http/yunpian.sh)
+```bash
+#单发
+#http http://localhost:8002/push epush_id=yunpian type=single mobile=$MOBILE content=$CONTENT
+
+#群发
+http http://localhost:8002/push epush_id=yunpian type=batch mobile=$MOBILE content=$CONTENT
+```
+
+* Rabbitmq: [/examples/rabbitmq/yunpian.py](/examples/rabbitmq/yunpian.py)
+```Python
+def single_send(self):
+    data = {'type': 'single',
+            'mobile': '+861510202',
+    'content':'【广州科技】验证码8888，请您尽快验证，完成sir注册。如非本人操作请忽略。'}
+    self.in_mq(data)
+
+def batch_send(self):
+    data = {'type': 'batch',
+            'mobile': '1510202',
+    'content':'【广州科技】验证码6666，请您尽快验证，完成sir注册。如非本人操作请忽略。'}
+```
 
 
 
@@ -241,10 +263,10 @@ def unvarnished(self):
 7. 执行：```dcy@dcy-dcy:~/app/epush/_build/default/rel/epush$ ./bin/epush start```
 
 ##Todo:
-- [ ] 整理完善文档
-- [ ] 增加HTTP请求方式
-- [ ] 增加kafka的工作方式
+- [x] 增加HTTP请求方式
+- [ ] 增加华为新的推送HMS Push
 - [ ] 增加联想的官方推送
+- [ ] 增加kafka的工作方式
 - [ ] Web管理后台
 
 
@@ -253,3 +275,4 @@ def unvarnished(self):
 * 小米的透传得在app打开才能收到，通知栏正常(透传是比较好的，唤醒App，app再处理逻辑)
 * 华为的推送重启手机后，得点一次APP，或者设置开机自启动后才正常收到，之后杀掉进程也可以
 * FCM的文档没看到服务端subscribe的api，android的基本都有
+* 华为推出了HMS
