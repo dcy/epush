@@ -65,6 +65,27 @@ epush是一个推送服务
 ```
 
 ###苹果APNS
+* http: [/examples/http/apns.sh](/examples/http/apns.sh)
+```bash
+#通用透传接口
+http http://localhost:8002/push epush_id=apns_c token=$TOKEN content="common" -f
+
+#各种参数的接口
+http http://localhost:8002/push epush_id=apns_c device_token=$TOKEN  sound="default"
+```
+
+* Rabbitmq: [/examples/rabbitmq/apns.py](/examples/rabbitmq/apns.py)
+```Python
+#通用
+def common(self):
+    msg_content = json.dumps({'body': 'body'})
+    message = json.dumps({'message_type': 'Common', 'type': 0, 'from': 51, 'content': msg_content})
+    data = {'content': message,
+            'token': self.token
+            }
+    self.in_mq(data)
+```
+
 ###谷歌FCM
 * Http: [/examples/http/fcm.sh](/examples/http/fcm.sh)
 ```bash
