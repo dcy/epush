@@ -36,7 +36,6 @@ stop(_State) ->
 init() ->
     ets:new(epush_confs, [named_table, public, set, {read_concurrency,true}]),
     epush_statistics:start_link(),
-    epush_apns:init(),
     start_workers(),
     start_websvr(),
     ?INFO_MSG("epush app start's init done"),
@@ -67,7 +66,10 @@ start_worker(#{id:=Id, type:=apns, pool_size:=PoolSize, cert_file:=CertFile,
                                 end,
     DefConn = apns:default_connection(),
     ApnsConn = DefConn#apns_connection{cert_file = CertFile, apple_host = AppleHost,
-                                       feedback_host = FeedbackHost},
+                                       feedback_host = FeedbackHost,
+                                       error_fun = fun epush_apns:handle_apns_error/2,
+                                       feedback_fun = fun epush_apns:handle_apns_delete_subscription/1
+                                      },
     apns:connect(eutil:to_atom(Id), ApnsConn),
     gen_subscriber(apns, eutil:to_binary(Id), PoolSize, #{type=>apns, apns_name=>Id}),
     put_push_conf(Id, Conf);

@@ -1,8 +1,6 @@
 -module(epush_apns).
 
--export([init/0, test/0, test1/0,
-         %handle_send/2,
-         handle_http/2,
+-export([handle_http/2,
          loop/4, handle_info/2,
          handle_apns_error/2, handle_apns_delete_subscription/1
         ]).
@@ -10,27 +8,11 @@
 -include_lib("apns/include/apns.hrl").
 -include_lib("eutil/include/eutil.hrl").
 
-init() ->
-    apns:connect(
-      apns,
-      fun ?MODULE:handle_apns_error/2,
-      fun ?MODULE:handle_apns_delete_subscription/1
-     ),
-    ok.
-
 handle_apns_error(MsgId, Status) ->
-    ?ERROR_MSG("epush error: ~p - ~p", [MsgId, Status]).
+    ?ERROR_MSG("epush_apns error: ~p - ~p", [MsgId, Status]).
 
 handle_apns_delete_subscription(Data) ->
-    ?INFO_MSG("delete subscription: ~p", [Data]).
-
-%handle_send(ApnsName, Payload) ->
-%    #{<<"token">> := DeviceToken, <<"content">> := Content} = jiffy:decode(Payload, [return_maps]),
-%    apns:send_message(ApnsName, #apns_msg{alert = "alert", badge = 1, sound = "default",
-%                                          device_token = binary_to_list(DeviceToken),
-%                                          apns_extra = [{content, Content}]
-%                                         }),
-%    ok.
+    ?INFO_MSG("epush_apns delete subscription: ~p", [Data]).
 
 handle_push(ApnsName, #{<<"token">> := DeviceToken, <<"content">> := Content}) ->
     apns:send_message(ApnsName, #apns_msg{alert = "alert", badge = 1, sound = "default",
@@ -90,23 +72,3 @@ format_apns_msg(#{<<"device_token">> := DeviceToken} = Payload) ->
 
 handle_http(#{id := ApnsName}, Payload) ->
     handle_push(ApnsName, Payload).
-
-
-
-test() ->
-    %ipad: 639fccce4dec1eaf3f09b2fdc1a3fab7ba28f2e0703991d7caa3b29165f4f26d
-    apns:send_message(apns, #apns_msg{
-                               alert  = "alert" ,
-                               badge  = 1,
-                               sound  = "default" ,
-                               category = "EMAIL_ACTION",
-                               expiry = 1548000749,
-                               device_token = "ae465ec6e42b5c7aeccde8ad8823e3bdca9ba29e0d48492c09e2e71ffc37ea57"
-                              }).
-
-test1() ->
-    %apns:send_message(apns, "ae465ec6e42b5c7aeccde8ad8823e3bdca9ba29e0d48492c09e2e71ffc37ea57", "hello world").
-    apns:send_message(apns_c, "ac18a5fa01e2dfefdf1a39eecd0316879e277d388099261fac691d58552f1126", "hello world"),
-    %epush_statistics:update().
-    ok.
-
