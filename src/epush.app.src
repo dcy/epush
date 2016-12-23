@@ -1,6 +1,6 @@
 {application, epush,
  [{description, "An OTP application"},
-  {vsn, "0.1.0"},
+  {vsn, "0.0.1"},
   {registered, []},
   {mod, { epush_app, []}},
   {applications,
