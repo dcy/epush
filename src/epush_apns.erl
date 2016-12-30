@@ -15,10 +15,8 @@ handle_apns_delete_subscription(Data) ->
     ?INFO_MSG("epush_apns delete subscription: ~p", [Data]).
 
 handle_push(ApnsName, #{<<"token">> := DeviceToken, <<"content">> := Content}) ->
-    apns:send_message(ApnsName, #apns_msg{alert = "alert", badge = 1, sound = "default",
-                                          device_token = binary_to_list(DeviceToken),
-                                          apns_extra = [{content, Content}]
-                                         });
+    apns:send_message(ApnsName, #apns_msg{alert = Content, badge = 1, sound = "default",
+                                          device_token = binary_to_list(DeviceToken)});
 
 handle_push(ApnsName, Payload) ->
     ApnsMsg = format_apns_msg(Payload),
