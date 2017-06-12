@@ -1,23 +1,24 @@
-##epush
+## epush
 epush是一个推送服务    
-> 集成了苹果apns，小米xiaomi，华为huawei，魅族Flyme，谷歌FCM的服务端推送    
+> 集成了苹果apns，小米xiaomi，华为hms，魅族Flyme，谷歌FCM的服务端推送    
 > 同时也集成了云片yunpian的短信服务    
 
 * 魅族Flyme: https://github.com/dcy/flyme_push
 * Google Fcm: https://github.com/dcy/fcm_push
 * 小米：https://github.com/dcy/xiaomi_push    
-* 华为: https://github.com/dcy/huawei_push
+* ~~华为: https://github.com/dcy/huawei_push~~
+* 华为HMS: https://github.com/dcy/hms_push
 * 云片yunpian：https://github.com/dcy/eyunpian    
 * 苹果apns: https://github.com/inaka/apns4erl    
 
-##Why
+## Why
 * 在ios，程序进入后台会被系统中止，App进程无法处理消息
 * 在Android，国内的很多定制的手机，App进程因为各种原因都无法保活，
 * 关于第三方推送平台依然很多保活问题，阿里推送，友盟，环信，云巴等也有集成小米，华为等官方推送
 * 小米，华为，魅族等的官方推送是系统级的，所以不用app进程常驻也能收到消息
 * 相关讨论：[Android推送讨论](https://github.com/android-cn/topics/issues/4)
 
-##How
+## How
 * 当app中的长链接(MQTT,XMPP,Websocket等)因为不可抗拒的原因断开了或者没有长链接时调用
 * 集成了小米，华为，魅族，Google FCM，苹果APNS，云片短信等server sdk
 * 针对手机客户端调用对应厂商自己的系统级别官方推送，因为是系统级的，app进程不在也能收到消息
@@ -25,7 +26,7 @@ epush是一个推送服务
 * 暂时消息队列用的是[Rabbitmq](https://www.rabbitmq.com/), 后续会增加[kafka](http://kafka.apache.org/)
 
 
-##使用方法
+## 使用方法
 配置config/sys.config：
 ```
 {turtle, [
@@ -64,7 +65,7 @@ epush是一个推送服务
 ]},
 ```
 
-###苹果APNS
+### 苹果APNS
 * http: [/examples/http/apns.sh](/examples/http/apns.sh)
 ```bash
 #通用透传接口
@@ -86,7 +87,7 @@ def common(self):
     self.in_mq(data)
 ```
 
-###谷歌FCM
+### 谷歌FCM
 * Http: [/examples/http/fcm.sh](/examples/http/fcm.sh)
 ```bash
 #通用透传接口
@@ -136,7 +137,7 @@ def topics(self):
             }
     self.in_mq(data)
 ```
-###小米
+### 小米
 * http: [/examples/http/xiaomi.sh](/examples/http/xiaomi.sh)
 ```bash
 #通用透传接口
@@ -168,7 +169,7 @@ def all(self):
     self.in_mq(data)
 ```
 
-###华为
+### 华为
 * http: [/examples/http/huawei.sh](/examples/http/huawei.sh)
 ```bash
 #通用透传接口
@@ -213,7 +214,7 @@ def batch(self):
             }
     self.in_mq(data)
 ```
-###魅族Flyme
+### 魅族Flyme
 * http: [/examples/http/flyme.sh](/examples/http/flyme.sh)
 ```bash
 #通用透传接口
@@ -248,7 +249,7 @@ def unvarnished(self):
             }
     self.in_mq(data)
 ```
-###云片yunpian
+### 云片yunpian
 * http: [/examples/http/yunpian.sh](/examples/http/yunpian.sh)
 ```bash
 #单发
@@ -274,7 +275,7 @@ def batch_send(self):
 
 
 
-##运行
+## 运行
 1. 安装rabbitmq, ```apt install rabbitmq-server```
 2. 安装Erlang，```apt install erlang```
 3. 获取epush: ```dcy@dcy-dcy:~/app$ git clone https://github.com/dcy/epush```
@@ -283,7 +284,7 @@ def batch_send(self):
 6. 进入bin目录：```dcy@dcy-dcy:~/app/epush$ cd _build/default/rel/epush```
 7. 执行：```dcy@dcy-dcy:~/app/epush/_build/default/rel/epush$ ./bin/epush start```
 
-##Todo:
+## Todo:
 - [x] 增加HTTP请求方式
 - [ ] 增加华为新的推送HMS Push
 - [ ] 增加联想的官方推送
@@ -291,7 +292,7 @@ def batch_send(self):
 - [ ] Web管理后台
 
 
-##心得备注
+## 心得备注
 * (2016-10-21 update):
 * 小米的透传得在app打开才能收到，通知栏正常(透传是比较好的，唤醒App，app再处理逻辑)
 * 华为的推送重启手机后，得点一次APP，或者设置开机自启动后才正常收到，之后杀掉进程也可以
