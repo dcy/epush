@@ -13,6 +13,14 @@ format_multi_topics(Topics) ->
     TopicList = lists:map(Fun, Topics),
     string:join(TopicList, " || ").
 
+handle_push(ApiKey, Proxy, #{<<"push_method">> := <<"general_notification">>,
+                             <<"device_token">> := DeviceToken,
+                             <<"title">> := Title, <<"content">> := Content}) ->
+    fcm_push:general_notification(ApiKey, Proxy, DeviceToken, Title, Content);
+
+handle_push(ApiKey, Proxy, #{<<"push_method">> := <<"general_app_msg">>,
+                             <<"device_token">> := DeviceToken, <<"msg">> := Msg}) ->
+    fcm_push:general_app_msg(ApiKey, Proxy, DeviceToken, #{content => Msg});
 
 handle_push(ApiKey, Proxy, #{<<"push_method">> := <<"notification">>, <<"title">> := Title,
                              <<"content">> := Body, <<"to">> := To}) ->
@@ -38,8 +46,9 @@ handle_push(ApiKey, Proxy, #{<<"push_method">> := <<"topics">>, <<"topics">> := 
     fcm_push:send(ApiKey, Proxy, Msg);
 
 handle_push(ApiKey, Proxy, #{<<"token">> := Token, <<"content">> := Content}) -> 
-    Msg = #{to => Token, data => #{content => Content}},
-    fcm_push:send(ApiKey, Proxy, Msg).
+    fcm_push:general_app_msg(ApiKey, Proxy, Token, #{content => Content}).
+    %Msg = #{to => Token, data => #{content => Content}},
+    %fcm_push:send(ApiKey, Proxy, Msg).
 
 
 loop(_RoutingKey, _ContentType, Payload, State) ->
@@ -50,7 +59,7 @@ handle_info(_Info, State) ->
     {ok, State}.
 
 handle_mq(#{api_key := ApiKey, proxy := Proxy}, Payload) ->
-    handle_push(ApiKey, Proxy, jiffy:decode(Payload, [return_maps])).
+    handle_push(ApiKey, Proxy, eutil:json_decode(Payload)).
 
 handle_http(#{api_key := ApiKey, proxy := Proxy}, Payload) ->
     handle_push(ApiKey, Proxy, Payload).

@@ -2,18 +2,24 @@
 -export([handle_http/2, 
          loop/4, handle_info/2
         ]).
+-include_lib("eutil/include/eutil.hrl").
 
 -define(PAYLOAD_MAPS, #{<<"title">> => "Hello", <<"description">> => "World",
                         <<"pass_through">> => 0, <<"notify_type">> => -1,
                         <<"payload">> => <<"">>, <<"restricted_package_name">> => "",
                         <<"registration_id">> => "", <<"extra.notify_effect">> => "1"}).
 
-
+handle_push(PkgName, AppSecret, #{<<"push_method">> := <<"general_notification">>,
+                                  <<"device_token">> := DeviceToken,
+                                  <<"title">> := Title, <<"content">> := Content}) ->
+    xiaomi_push:general_notification(AppSecret, PkgName, DeviceToken, Title, Content);
+handle_push(PkgName, AppSecret, #{<<"push_method">> := <<"general_app_msg">>,
+                                  <<"device_token">> := DeviceToken, <<"msg">> := Msg}) ->
+    xiaomi_push:general_app_msg(AppSecret, PkgName, DeviceToken, Msg);
 handle_push(PkgName, AppSecret, #{<<"push_method">> := <<"notification_send">>} = PayloadMaps) ->
     URL = <<"https://api.xmpush.xiaomi.com/v3/message/regid">>,
     NewMaps = maps:merge(?PAYLOAD_MAPS#{<<"restricted_package_name">> => PkgName, <<"pass_through">> => 0}, maps:remove(<<"push_method">>, PayloadMaps)),
     xiaomi_push:send(AppSecret, URL, NewMaps);
-
 handle_push(PkgName, AppSecret, #{<<"push_method">> := <<"pass_through">>} = PayloadMaps) ->
     URL = <<"https://api.xmpush.xiaomi.com/v3/message/regid">>,
     NewMaps = maps:merge(?PAYLOAD_MAPS#{<<"restricted_package_name">> => PkgName, <<"pass_through">> => 1}, maps:remove(<<"push_method">>, PayloadMaps)),
@@ -56,5 +62,5 @@ handle_http(Conf, Payload) ->
     Result.
 
 handle_mq(#{pkg_name := PkgName, app_secret := AppSecret}, Payload) ->
-    Result = handle_push(PkgName, AppSecret, jiffy:decode(Payload, [return_maps])),
+    Result = handle_push(PkgName, AppSecret, eutil:json_decode(Payload)),
     Result.
