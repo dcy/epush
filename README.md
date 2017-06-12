@@ -27,12 +27,12 @@ epush是一个推送服务
 
 
 ## 使用方法
-配置config/sys.config：
+配置config/sys.config, 配置各个推送的参数：
 ```
 {turtle, [
     {connection_config, [#{conn_name => amqp_server,
-                              username => "hisir",
-                              password => "hisir123",
+                              username => "username",
+                              password => "password",
                               virtual_host => "/",
                               connections => [
                               {main, [
@@ -45,210 +45,65 @@ epush是一个推送服务
 {epush, [
     {http_port, 8002},
     {push_confs, [
-        #{id => apns_c, type => apns, cert_file => "priv/cert1.pem", is_sandbox_env => false,
+        #{id => apns1, type => apns, certfile => "priv/apns1_cert.pem", keyfile => "priv/apns1_key.pem", is_dev_env => false, headers => #{}, pool_size => 2, timeout => 5000},
+        #{id => apns2, type => apns, certfile => "priv/apns2_cert.pem", keyfile => "priv/apns2_key.pem", is_dev_env => false, headers => #{apns_topic => "apns_topic"}, pool_size => 2, timeout => 5000},
+        #{id => xiaomi1, type => xiaomi, pkg_name => "xiaomi1_pkg_name", app_secret => "xiaomi1_app_secret",
             pool_size => 6},
-        #{id => apns_t, type => apns, cert_file => "priv/cert2.pem", is_sandbox_env => false,
+        #{id => hms1, type => hms, app_id => 123456, app_secret => "hms1_app_secret",
             pool_size => 6},
-        #{id => xiaomi_c, type => xiaomi, pkg_name => "xiaomi_pkg_name", app_secret => "xiaomi_app_secret",
+        #{id => fcm1, type => fcm, api_key=> "fcm1_api_key", proxy => {socks5, "127.0.0.1", 1080},
             pool_size => 6},
-        #{id => huawei_c, type => huawei, app_id => 123456, app_secret => "huawei_app_secret",
+        #{id => flyme1, type => flyme, app_id => 123456, app_secret => "flyme1_app_secret",
             pool_size => 6},
-        %#{id => fcm_t, type => fcm, api_key=> "fcm_api_key", proxy => undefined,
-        %   pool_size => 6}
-        #{id => fcm_c, type => fcm, api_key=> "fcm_api_key", proxy => "127.0.0.1:1081",
-            pool_size => 6},
-        #{id => flyme_c, type => flyme, app_id => 123456, app_secret => "flyme_app_secret",
-            pool_size => 6},
-        #{id => yunpian, type => sms, sms_type => yunpian, apikey => "yunpian_apikey",
-            pool_size => 6}
+
+        #{id => yunpian, type => yunpian, apikey => "yunpian_apikey", pool_size => 6}
     ]}
 ]},
 ```
+### 推送
+| 参数 | 描述          |
+| ------------- | ----------- |
+| epush_id      | sys.config的push_confs的id,标识用哪个推送来推（http方式用） |
+| routing_key   | sys.config的push_confs的id,标识放入哪个队列（rabbitmq方式用）
+| device_token  | 设备的token |
+| push_method     | 通知栏general_notification, 透传general_app_msg |
+| title | 标题（general_notification用）  |
+| content | 内容 （general_notification用） |
+| msg | 推送内容（general_app_msg用）|
 
-### 苹果APNS
-* http: [/examples/http/apns.sh](/examples/http/apns.sh)
+#### HTTP方式
 ```bash
-#通用透传接口
-http http://localhost:8002/push epush_id=apns_c token=$TOKEN content="common" -f
+#通用通知栏
+http post "http://localhost:8002/push" epush_id=xiaomi1 push_method=general_notification device_token="kuM7AixVXNQRUqgdEa5Zg+SWR0dNNeKbcg1ANYu/PFM=" title="title" content="content"
 
-#各种参数的接口
-http http://localhost:8002/push epush_id=apns_c device_token=$TOKEN  sound="default"
+#通用投传
+http post "http://localhost:8002/push" epush_id=apns1 push_method=general_app_msg device_token="9c3bba269163640bb0165ba9a8320959c7d4c70b0b8cb92ef3a9a9d1442fcccd" msg="app_msg"
 ```
+> 其他接口参考：[/examples/http](/examples/http)
 
-* Rabbitmq: [/examples/rabbitmq/apns.py](/examples/rabbitmq/apns.py)
+#### Rabbitmq方式
 ```Python
-#通用
-def common(self):
-    msg_content = json.dumps({'body': 'body'})
-    message = json.dumps({'message_type': 'Common', 'type': 0, 'from': 51, 'content': msg_content})
-    data = {'content': message,
-            'token': self.token
-            }
-    self.in_mq(data)
+    def general_notification(self):
+        data = {'push_method': 'general_notification',
+                'device_token': 'kuM7AixVXNQRUqgdEa5Zg+SWR0dNNeKbcg1ANYu/PFM=',
+                'title': 'title',
+                'content': 'content'}
+        self.in_mq(data)
+
+    def general_app_msg(self):
+        data = {'push_method': 'general_app_msg',
+                'device_token': 'kuM7AixVXNQRUqgdEa5Zg+SWR0dNNeKbcg1ANYu/PFM=',
+                'msg': 'app_msg'}
+        self.in_mq(data)
+
+    def in_mq(self, data):
+        self.channel.basic_publish(exchange='',
+                routing_key='xiaomi1',
+                body=json.dumps(data))
 ```
+> 其他接口参考：[/examples/rabbitmq](/examples/rabbitmq)
 
-### 谷歌FCM
-* Http: [/examples/http/fcm.sh](/examples/http/fcm.sh)
-```bash
-#通用透传接口
-#http http://localhost:8002/push epush_id=fcm_c token=$TOKEN content="common" -f
 
-#通知栏
-#http http://localhost:8002/push  epush_id=fcm_c push_method=notification title=title content=content  to=$TOKEN
-
-#透传
-http http://localhost:8002/push  epush_id=fcm_c push_method=data content=content  to=$TOKEN
-```
-* Rabbitmq: [/examples/rabbitmq/fcm.py](/examples/rabbitmq/fcm.py)
-```Python
-#通用
-def common(self):
-    msg_content = json.dumps({'body': 'body'})
-    message = json.dumps({'message_type': 'Common', 'type': 0, 'from': 51, 'content': msg_content})
-    data = {'content': message,
-            'token': self.token
-            }
-    self.in_mq(data)
-
-#通知栏
-def notification(self):
-    data = {'push_method': 'notification',
-            'title': 'Title',
-            'content': 'Content',
-            'to': self.token 
-            }
-    self.in_mq(data)
-
-#透传
-def data(self):
-    msg_content = json.dumps({'body': 'body'})
-    message = json.dumps({'message_type': 'Common', 'type': 0, 'from': 51, 'content': msg_content})
-    msg = {'push_method': 'data',
-            'content': message,
-            'to': self.token
-            }
-    self.in_mq(msg)
-
-#主题
-def topics(self):
-    data = {'push_method': 'topics',
-    'topics': ["/topics/foo-bar"],
-            'content': "content"
-            }
-    self.in_mq(data)
-```
-### 小米
-* http: [/examples/http/xiaomi.sh](/examples/http/xiaomi.sh)
-```bash
-#通用透传接口
-#http http://localhost:8002/push epush_id=xiaomi_c token="go6VssZlTDDypm+hxYdaxycXtqM7M9NsTPbCjzyIyh0=" content="common" -f
-
-#推送全部
-#http http://localhost:8002/push epush_id=xiaomi_c push_method=all title="all中文" description="中文"
-
-#推送单人通知 
-http http://localhost:8002/push epush_id=xiaomi_c push_method=notification_send title="notification_send中文" description="中文" registration_id="go6VssZlTDDypm+hxYdaxycXtqM7M9NsTPbCjzyIyh0=" -f
-
-#推送单人透传 
-#http http://localhost:8002/push epush_id=xiaomi_c push_method=pass_through description="中文" registration_id="go6VssZlTDDypm+hxYdaxycXtqM7M9NsTPbCjzyIyh0=" -f
-```
-
-* Rabbitmq: [/examples/rabbitmq/xiaomi.py](/examples/rabbitmq/xiaomi.py)
-```Python
-def notification_send(self):
-    data = {'push_method': 'notification_send',
-            'title': 'Test  中文',
-            'description': 'Content',
-            'registration_id': 'go6VssZlTDDypm+hxYdaxycXtqM7M9NsTPbCjzyIyh0='}
-    self.in_mq(data)
-
-def all(self):
-    data = {'push_method':'all',
-            'title':'Test中文',
-            'description':'Test'}
-    self.in_mq(data)
-```
-
-### 华为
-* http: [/examples/http/huawei.sh](/examples/http/huawei.sh)
-```bash
-#通用透传接口
-#http http://localhost:8002/push epush_id=huawei_c token=$TOKEN content="common" -f
-
-#通知栏
-http http://localhost:8002/push epush_id=huawei_c push_method=notification_send title=title content=content  tokens=$TOKEN
-
-#透传
-#http http://localhost:8002/push  epush_id=huawei_c push_method=single_send message=message  deviceToken=$TOKEN
-```
-* Rabbitmq: [/examples/rabbitmq/huawei.py](/examples/rabbitmq/huawei.py)
-```Python
-#通知栏
-def notification(self):
-    data = {'push_method':'notification_send',
-            'push_type': 1,
-            'tokens': '08670650250202362000003019000001',
-            'title': "Hello!",
-            'content': "World"
-            }
-    self.in_mq(data)
-
-#透传
-def single(self):
-    msg_content = json.dumps({'body': 'body'})
-    message = json.dumps({'message_type': 'Common', 'type': 0, 'from': 51, 'content': msg_content})
-    data = {'push_method': 'single_send',
-            'message': message,
-            'deviceToken': '08670650250202362000003019000001'
-            }
-    self.in_mq(data)
-
-#群发
-def batch(self):
-    msg_content = json.dumps({'body': 'body'})
-    message = json.dumps({'message_type': 'Common', 'type': 0, 'from': 51, 'content': msg_content})
-    #message = json.dumps({'test': 'test'})
-    data = {'push_method': 'batch_send',
-            'message': message,
-            'deviceTokenList': ['08670650250202362000003019000001', 'sdfsdf']
-            }
-    self.in_mq(data)
-```
-### 魅族Flyme
-* http: [/examples/http/flyme.sh](/examples/http/flyme.sh)
-```bash
-#通用透传接口
-#http http://localhost:8002/push epush_id=flyme_c token=$TOKEN content="common" -f
-
-#通知栏
-#http http://localhost:8002/push  epush_id=flyme_c push_method=varnished title=title content=content  pushIds=$TOKEN
-#http http://localhost:8002/push  epush_id=flyme_c push_method=notification title=title content=content  pushIds=$TOKEN
-
-#透传
-http http://localhost:8002/push  epush_id=flyme_c push_method=unvarnished title=title content=content  pushIds=$TOKEN
-```
-
-* Rabbitmq: [/examples/rabbitmq/flyme.py](/examples/rabbitmq/flyme.py)
-```Python
-#通知栏
-def notification(self):
-    data = {'push_method':'notification',
-            'title': "Hello!",
-            'content': "World",
-            'pushIds': self.push_ids
-            }
-    self.in_mq(data)
-
-#透传
-def unvarnished(self):
-    msg_content = json.dumps({'body': 'body'})
-    message = json.dumps({'message_type': 'Common', 'type': 0, 'from': 51, 'content': msg_content})
-    data = {'push_method': 'unvarnished',
-            'content': message,
-            'pushIds': 'UU34b4f75595d58540a78407f4d5a60630642497c5c5e'
-            }
-    self.in_mq(data)
-```
 ### 云片yunpian
 * http: [/examples/http/yunpian.sh](/examples/http/yunpian.sh)
 ```bash
@@ -285,16 +140,11 @@ def batch_send(self):
 7. 执行：```dcy@dcy-dcy:~/app/epush/_build/default/rel/epush$ ./bin/epush start```
 
 ## Todo:
-- [x] 增加HTTP请求方式
-- [ ] 增加华为新的推送HMS Push
-- [ ] 增加联想的官方推送
 - [ ] 增加kafka的工作方式
 - [ ] Web管理后台
 
 
 ## 心得备注
-* (2016-10-21 update):
+* (2017-06-12 update):
 * 小米的透传得在app打开才能收到，通知栏正常(透传是比较好的，唤醒App，app再处理逻辑)
-* 华为的推送重启手机后，得点一次APP，或者设置开机自启动后才正常收到，之后杀掉进程也可以
-* FCM的文档没看到服务端subscribe的api，android的基本都有
-* 华为推出了HMS
+* 华为推送请用hms，旧的推送效果很差，hms旧的rom要安装手机移动服务
