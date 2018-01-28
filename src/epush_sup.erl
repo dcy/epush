@@ -28,7 +28,14 @@ start_link() ->
 
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
 init([]) ->
-    {ok, { {one_for_all, 0, 1}, []} }.
+
+    Restart = permanent,
+    Shutdown = 6000,
+    PoolChild = #{id => epush_pool_sup,
+                       start => {epush_pool_sup, start_link, []},
+                       restart => Restart, shutdown => Shutdown, type => supervisor,
+                       modules => [epush_pool_sup]},
+    {ok, { {one_for_all, 10, 10}, [PoolChild]} }.
 
 %%====================================================================
 %% Internal functions
